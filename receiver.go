@@ -75,8 +75,9 @@ func (cli *receiver) react() {
 	defer cli.wg.Done()
 
 	reply := uint32(0)
+	received := uint64(0)
 	for {
-		obj, err := cli.receive()
+		obj, packetSize, err := cli.receive()
 		if err != nil {
 			if errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) {
 				fmt.Println("client connection lost")
@@ -85,7 +86,8 @@ func (cli *receiver) react() {
 			panic(err)
 		}
 
-		fmt.Printf("received: %v\n", obj)
+		received += uint64(packetSize)
+		fmt.Printf("received: %d bytes: %v\n", received, obj)
 
 		// simulate some processing delay
 		time.Sleep(time.Millisecond * 5)
@@ -121,7 +123,7 @@ func (cli *receiver) send(obj any) (err error) {
 	return
 }
 
-func (cli *receiver) receive() (obj any, err error) {
+func (cli *receiver) receive() (obj any, packetSize uint32, err error) {
 	for {
 		seg := make([]byte, 1024)
 
@@ -139,7 +141,7 @@ func (cli *receiver) receive() (obj any, err error) {
 		}
 
 		msgLen := binary.BigEndian.Uint32(cli.input[0:4])
-		packetSize := msgLen + 4
+		packetSize = msgLen + 4
 
 		if packetSize > 8192 {
 			err = errors.New("too long")

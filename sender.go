@@ -149,6 +149,7 @@ func (cxn *senderCxn) sendStuff() {
 	}()
 
 	count := uint32(0)
+	sent := uint64(0)
 	for {
 		select {
 		case <-cxn.l.Done():
@@ -158,7 +159,7 @@ func (cxn *senderCxn) sendStuff() {
 		}
 
 		count++
-		msg := fmt.Sprintf("this is message %d", count)
+		msg := fmt.Sprintf("message %d, previously sent %d bytes", count, sent)
 		raw, err := json.Marshal(msg)
 		if err != nil {
 			panic(err)
@@ -172,8 +173,9 @@ func (cxn *senderCxn) sendStuff() {
 		if err != nil {
 			panic(err)
 		}
+		sent += uint64(len(packet))
 
-		fmt.Printf("sent %d\n", count)
+		fmt.Printf("sent %d, %d bytes\n", count, sent)
 		time.Sleep(time.Millisecond) // slow things for easier observation
 	}
 }
